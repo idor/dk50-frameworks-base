@@ -1,11 +1,11 @@
-/*
- * Copyright (C) 2012 The Android Open Source Project
+/**
+ * Copyright (c) 2010, The Android-x86 Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,70 +15,16 @@
  */
 
 package android.net.ethernet;
+import android.net.ethernet.EthernetDevInfo;
 
-import android.net.ethernet.EthernetInfo;
-import android.net.ethernet.EthernetConfiguration;
-import android.net.DhcpInfo;
-
-import android.os.Messenger;
-import android.os.WorkSource;
-
-/**
- * Interface that allows controlling and querying Ethernet connectivity.
- *
- * {@hide}
- */
 interface IEthernetManager
 {
-    List<EthernetConfiguration> getConfiguredNetworks();
-
-    int addOrUpdateNetwork(in EthernetConfiguration config);
-
-    boolean removeNetwork(int netId);
-
-    boolean enableNetwork(int netId, boolean disableOthers);
-
-    boolean disableNetwork(int netId);
-
-    boolean disconnect();
-
-    boolean reconnect();
-
-    EthernetInfo getConnectionInfo();
-
-    boolean setEthernetEnabled(boolean enabled);
-
-    int getEthernetState();
-
-    boolean isEthernetEnabled();
-
-    boolean saveConfiguration();
-
-    DhcpInfo getDhcpInfo();
-
-    boolean acquireEthernetLock(IBinder lock, int lockType, String tag, in WorkSource ws);
-
-    void updateEthernetLockWorkSource(IBinder lock, in WorkSource ws);
-
-    boolean releaseEthernetLock(IBinder lock);
-
-    boolean initializeMulticastFiltering();
-
-    boolean isMulticastEnabled();
-
-    void acquireMulticastLock(IBinder binder, String tag);
-
-    void releaseMulticastLock();
-
-    boolean startEthernet();
-
-    boolean stopEthernet();
-
-    Messenger getEthernetServiceMessenger();
-
-    Messenger getEthernetStateMachineMessenger();
-
-    String getConfigFile();
-
-    void captivePortalCheckComplete();
+    String[] getDeviceNameList();
+    void setState(int state);
+    int getState( );
+    void updateDevInfo(in EthernetDevInfo info);
+    boolean isConfigured();
+    EthernetDevInfo getSavedConfig();
+    int getTotalInterface();
+    void setMode(String mode);
 }

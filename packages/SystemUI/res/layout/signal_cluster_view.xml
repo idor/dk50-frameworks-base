@@ -31,7 +31,7 @@
         android:id="@+id/wifi_combo"
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:layout_marginEnd="-6dp"
+        android:layout_marginEnd="+6dp"
         >
         <ImageView
             android:id="@+id/wifi_signal"
@@ -41,6 +41,33 @@
             android:layout_centerVertical="true"
             android:scaleType="center"
             />
+    </FrameLayout>
+    <FrameLayout
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        >
+        <View
+            android:layout_height="6dp"
+            android:layout_width="6dp"
+            android:visibility="invisible"
+            />
+        <FrameLayout
+            android:id="@+id/ethernet_combo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            >
+            <ImageView
+                android:id="@+id/ethernet_status"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                />
+            <ImageView
+                android:id="@+id/ethernet_inout"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_gravity="right|bottom"
+                />
+        </FrameLayout>
     </FrameLayout>
     <View
         android:layout_height="6dp"

@@ -85,6 +85,9 @@ public class EthernetDataTracker extends BaseNetworkStateTracker {
                     mTracker.reconnect();
                 } else {
                     mTracker.disconnect();
+
+                    Message msg = mTracker.mCsHandler.obtainMessage(EVENT_STATE_CHANGED, mTracker.mNetworkInfo);
+                    msg.sendToTarget();
                 }
             }
         }

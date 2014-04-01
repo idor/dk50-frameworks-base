@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012 The Android Open Source Project
+ * Copyright (C) 2010 The Android-X86 Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,103 +12,104 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
+ * Author: Yi Sun <beyounn@gmail.com>
  */
 
 package android.net.ethernet;
 
-import android.net.NetworkInfo;
+import java.util.regex.Matcher;
 
+import android.net.NetworkInfo;
 import android.util.Config;
 import android.util.Slog;
 import java.util.StringTokenizer;
 
-import com.android.internal.util.Protocol;
-import com.android.internal.util.StateMachine;
-
-import java.util.List;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
-
 /**
- * Listens for events from kernel, and passes them on
- * to the {@link StateMachine} for handling. Runs in its own thread.
- *
+ * Listens for events from kernel, and passes them on to the
+ * {@link EtherentStateTracker} for handling. Runs in its own thread.
+ * 
  * @hide
  */
 public class EthernetMonitor {
+	private static final String		TAG = "EthernetMonitor";
+	private static final int		CONNECTED			= 1;
+	private static final int		DISCONNECTED		= 2;
+	private static final int		PHYUP				= 3;
+	private static final String		connectedEvent		= "CONNECTED";
+	private static final String		disconnectedEvent	= "DISCONNECTED";
+	private static final int		ADD_ADDR			= 20;
+	private static final int		RM_ADDR				= 21;
+	private static final int		NEW_LINK			= 16;
+	private static final int		DEL_LINK			= 17;
+	private static final boolean	localLOGV = true;
 
-    private static final String TAG = "EthernetMonitor";
+	private EthernetStateTracker	mTracker;
 
-    /** Internal events */
-    private static final int EVENT_UNKNOWN = 0;
-    private static final int EVENT_PHY_UP = 1;
-    private static final int EVENT_PHY_DOWN = 2;
-    private static final int EVENT_CONNECTED = 3;
-    private static final int EVENT_DISCONNECTED = 4;
+	public EthernetMonitor(EthernetStateTracker tracker) {
+		mTracker = tracker;
+	}
 
-    private static final String EVENT_PHY_UP_STR = "PHY_UP";
-    private static final String EVENT_PHY_DOWN_STR = "PHY_DOWN";
-    private static final String EVENT_CONNECTED_STR = "CONNECTED";
-    private static final String EVENT_DISCONNECTED_STR = "DISCONNECTED";
+	public void startMonitoring() {
+		new MonitorThread().start();
+	}
 
-    private final StateMachine mStateMachine;
-    private final EthernetNative mEthernetNative;
-
-    /* Kernel events reported to a state machine */
-    private static final int BASE = Protocol.BASE_ETHERNET_MONITOR;
-
-    /* Network connection completed */
-    public static final int NETWORK_CONNECTION_EVENT             = BASE + 1;
-    /* Network disconnection completed */
-    public static final int NETWORK_DISCONNECTION_EVENT          = BASE + 2;
-
-    public EthernetMonitor(StateMachine ethernetStateMachine, EthernetNative ethernetNative) {
-	mStateMachine = ethernetStateMachine;
-	mEthernetNative = ethernetNative;
-    }
-
-    public void startMonitoring() {
-        new MonitorThread().start();
-    }
-
-    class MonitorThread extends Thread {
-        public MonitorThread() {
-            super("EthernetMonitor");
-        }
-
-        public void run() {
-
-            //noinspection InfiniteLoopStatement
-            for (;;) {
-                Log.d(TAG, "Poll Ethernet netlink events");
-
-                String eventStr = mEthernetNative.waitForEvent();
-
-                if (eventStr == null) {
-                    continue;
-                }
-
-                Log.d(TAG, "Event [" + eventStr + "]");
-
-		if (EVENT_PHY_UP_STR.isEqual(eventStr)) {
-		    mStateMachine.sendMessage(EVENT_PHY_UP);
-                    //mTracker.notifyPhyConnected();
+	class MonitorThread extends Thread {
+		public MonitorThread() {
+			super("EthMonitor");
 		}
-		else if (EVENT_PHY_DOWN_STR.isEqual(eventStr)) {
-		    mStateMachine.sendMessage(EVENT_PHY_DOWN);
-                    //mTracker.notifyPhyDisconnected();
+
+		public void run() {
+			// noinspection InfiniteLoopStatement
+			for (;;) {
+				int index;
+				int i;
+				int cmd;
+				String dev;
+
+				if (localLOGV)
+					Slog.v(TAG, "go poll events");
+
+				String eventName = EthernetNative.waitForEvent();
+
+				if (eventName == null) {
+					continue;
+				}
+
+				if (localLOGV)
+					Slog.v(TAG, "get event " + eventName);
+
+				/*
+				 * Map event name into event enum
+				 */
+				i = 0;
+				while (i < eventName.length()) {
+					index = eventName.substring(i).indexOf(":");
+					if (index == -1)
+						break;
+					dev = eventName.substring(i, index);
+					i += index + 1;
+					index = eventName.substring(i).indexOf(":");
+					if (index == -1)
+						break;
+					cmd = Integer.parseInt(eventName.substring(i, i + index));
+					i += index + 1;
+					if (localLOGV)
+						Slog.v(TAG, "dev: " + dev + " ev " + cmd);
+					switch (cmd) {
+					case NEW_LINK:
+						mTracker.notifyStateChange(dev, EthernetStateTracker.EVENT_PHY_CONNECTED);
+						break;
+					case DEL_LINK:
+						mTracker.notifyStateChange(dev, EthernetStateTracker.EVENT_PHY_DISCONNECTED);
+						break;
+					case ADD_ADDR:
+						mTracker.notifyStateChange(dev, EthernetStateTracker.EVENT_ADD_ADDR);
+						break;
+					}
+				}
+			}
 		}
-		else if (EVENT_CONNECTED_STR.isEqual(eventStr)) {
-		    mStateMachine.sendMessage(EVENT_CONNECTED);
-                    //mTracker.notifyStateChange(NetworkInfo.DetailedState.CONNECTED);
-		}
-		else if (EVENT_DISCONNECTED_STR.isEqual(eventStr)) {
-		    mStateMachine.sendMessage(EVENT_DISCONNECTED);
-                    //mTracker.notifyStateChange(NetworkInfo.DetailedState.DISCONNECTED);
-		} else {
-                    //mTracker.notifyStateChange(NetworkInfo.DetailedState.FAILED);
-		}
-            }
-        }
-    }
+
+	}
 }

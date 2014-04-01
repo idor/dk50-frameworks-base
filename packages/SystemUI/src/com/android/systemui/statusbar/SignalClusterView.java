@@ -42,15 +42,17 @@ public class SignalClusterView
 
     private boolean mWifiVisible = false;
     private int mWifiStrengthId = 0;
+    private boolean mEthernetVisible = false;
+    private int mEthernetId = 0;
     private boolean mMobileVisible = false;
     private int mMobileStrengthId = 0, mMobileActivityId = 0;
     private int mMobileTypeId = 0, mNoSimIconId = 0;
     private boolean mIsAirplaneMode = false;
     private int mAirplaneIconId = 0;
-    private String mWifiDescription, mMobileDescription, mMobileTypeDescription;
+    private String mWifiDescription, mMobileDescription, mMobileTypeDescription, mEthernetDescription;
 
-    ViewGroup mWifiGroup, mMobileGroup;
-    ImageView mWifi, mMobile, mMobileType, mAirplane, mNoSimSlot;
+    ViewGroup mWifiGroup, mEthernetGroup, mMobileGroup;
+    ImageView mWifi, mEthernet, mMobile, mMobileType, mAirplane, mNoSimSlot;
     View mSpacer;
 
     public SignalClusterView(Context context) {
@@ -77,6 +79,8 @@ public class SignalClusterView
         mWifiGroup      = (ViewGroup) findViewById(R.id.wifi_combo);
         mWifi           = (ImageView) findViewById(R.id.wifi_signal);
         mMobileGroup    = (ViewGroup) findViewById(R.id.mobile_combo);
+        mEthernetGroup  = (ViewGroup) findViewById(R.id.ethernet_combo);
+        mEthernet       = (ImageView) findViewById(R.id.ethernet_status);
         mMobile         = (ImageView) findViewById(R.id.mobile_signal);
         mMobileType     = (ImageView) findViewById(R.id.mobile_type);
         mNoSimSlot      = (ImageView) findViewById(R.id.no_sim);
@@ -90,6 +94,8 @@ public class SignalClusterView
     protected void onDetachedFromWindow() {
         mWifiGroup      = null;
         mWifi           = null;
+        mEthernetGroup  = null;
+        mEthernet       = null;
         mMobileGroup    = null;
         mMobile         = null;
         mMobileType     = null;
@@ -108,6 +114,18 @@ public class SignalClusterView
 
         apply();
     }
+
+    @Override
+    public void setEthernetIndicators(boolean visible, int statusIcon,
+            String contentDescription) {
+        mEthernetVisible = visible;
+        mEthernetId = statusIcon;
+        mEthernetDescription = contentDescription;
+
+        apply();
+    }
+
+
 
     @Override
     public void setMobileDataIndicators(boolean visible, int strengthIcon,
@@ -182,6 +200,15 @@ public class SignalClusterView
                 String.format("wifi: %s sig=%d",
                     (mWifiVisible ? "VISIBLE" : "GONE"),
                     mWifiStrengthId));
+
+        if (mEthernetVisible) {
+            mEthernetGroup.setVisibility(View.VISIBLE);
+            mEthernet.setImageResource(mEthernetId);
+            mEthernetGroup.setContentDescription(mEthernetDescription);
+        } else {
+            mEthernetGroup.setVisibility(View.GONE);
+        }
+
 
         if (mMobileVisible && !mIsAirplaneMode) {
             mMobile.setImageResource(mMobileStrengthId);
