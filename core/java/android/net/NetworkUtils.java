@@ -137,6 +137,13 @@ public class NetworkUtils {
                 ((addr[1] & 0xff) << 8) | (addr[0] & 0xff);
     }
 
+    public static int inetAddressToInt(InetAddress inetAddr)
+            throws IllegalArgumentException {
+        byte [] addr = inetAddr.getAddress();
+        return ((addr[3] & 0xff) << 24) | ((addr[2] & 0xff) << 16) |
+                ((addr[1] & 0xff) << 8) | (addr[0] & 0xff);
+    }
+
     /**
      * Convert a network prefix length to an IPv4 netmask integer
      * @param prefixLength

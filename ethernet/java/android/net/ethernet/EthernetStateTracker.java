@@ -195,7 +195,7 @@ public class EthernetStateTracker extends Handler implements NetworkStateTracker
 		return true;
 	}
 
-
+/*
 	private boolean configureInterface(EthernetDevInfo info) throws UnknownHostException {
 		mInterfaceStopped = false;
 
@@ -213,6 +213,65 @@ public class EthernetStateTracker extends Handler implements NetworkStateTracker
 		}
 		return true;
 	}
+*/
+
+	private boolean configureInterface(EthernetDevInfo info) throws UnknownHostException {
+		mInterfaceStopped = false;
+
+		if (info.getConnectMode().equals(EthernetDevInfo.ETHERNET_CONN_MODE_DHCP)) {
+			if (localLOGV)
+				Slog.i(TAG, "trigger dhcp for device " + info.getIfName());
+			mLinkProperties.clear();
+			sDnsPropNames = new String[] { "dhcp." + mInterfaceName + ".dns1", "dhcp." + mInterfaceName + ".dns2" };
+
+			mDhcpTarget.sendEmptyMessage(EVENT_DHCP_START);
+		} else {
+			int event;
+			int prefix;
+			InetAddress mask;
+
+			sDnsPropNames = new String[] { "net." + mInterfaceName + ".dns1", "net." + mInterfaceName + ".dns2" };
+
+			try {
+				mask    = NetworkUtils.numericToInetAddress(info.getNetMask());
+				prefix  = NetworkUtils.inetAddressToInt(mask);
+				prefix  = NetworkUtils.netmaskIntToPrefixLength(prefix);
+
+				mDhcpResults.clear();
+				mDhcpResults.setInterfaceName(mInterfaceName);
+				mDhcpResults.setServerAddress(info.getRouteAddr());
+				mDhcpResults.addLinkAddress(info.getIpAddress(), prefix);
+				mDhcpResults.addGateway(info.getRouteAddr());
+				mDhcpResults.addDns(info.getDnsAddr());
+				mDhcpResults.setLeaseDuration(-1);
+
+				mLinkProperties = mDhcpResults.linkProperties;
+
+				LinkAddress linkAddress = new LinkAddress(NetworkUtils.numericToInetAddress(info.getIpAddress()), prefix);
+
+
+				if (localLOGV)
+					Slog.i(TAG, "set ip manually " + mDhcpResults.toString());
+
+				InterfaceConfiguration ifcg = new InterfaceConfiguration();
+				ifcg.setLinkAddress(linkAddress);
+				ifcg.setFlag("up");
+
+				mNwService.setInterfaceConfig(info.getIfName(), ifcg);
+				if (localLOGV)
+					Slog.v(TAG, "Static IP configuration succeeded");
+				event = EVENT_CONFIGURATION_SUCCEEDED;
+			} catch (Exception e) {
+				if (localLOGV)
+					Slog.v(TAG, "Static IP configuration failed: " + e);
+				event = EVENT_CONFIGURATION_FAILED;
+			}
+
+			this.sendEmptyMessage(event);
+		}
+		return true;
+	}
+
 
 	/**
 	 * reset ethernet interface
