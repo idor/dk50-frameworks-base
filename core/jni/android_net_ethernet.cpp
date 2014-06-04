@@ -70,6 +70,7 @@ namespace android {
     interface_info_t *interfaces = NULL;
     int total_int = 0;
     static const char SYSFS_CLASS_NET[] = "/sys/class/net";
+    /* Normally these sockets nevere closed. Negative value is a flag top prevent double opening */
     static int nl_socket_msg = NL_SOCK_INV;
     static struct sockaddr_nl addr_msg;
     static int nl_socket_poll = NL_SOCK_INV;
@@ -243,17 +244,19 @@ namespace android {
         char path[SYSFS_PATH_MAX];
         interface_info_t *intfinfo;
         int index;
-        FILE *ifidx;
-        #define MAX_FGETS_LEN 4
-        char idx[MAX_FGETS_LEN+1];
 
         if ((netdir = opendir(SYSFS_CLASS_NET)) != NULL) {
              while ((de = readdir(netdir))) {
+                FILE *ifidx;
+                #define MAX_FGETS_LEN 4
+                char idx[MAX_FGETS_LEN+1];
+
                 if ((!strcmp(de->d_name, ".")) || (!strcmp(de->d_name, ".."))
                     ||(!strcmp(de->d_name, "lo")) || (!strcmp(de->d_name, "wmaster0")) ||
                     (!strcmp(de->d_name, "pan0")) ||
 		    (!strncmp(de->d_name, "dummy",strlen("dummy"))) ||
 		    (!strncmp(de->d_name, "rmnet",strlen("rmnet"))) ||
+		    (!strncmp(de->d_name, "rev_rmnet",strlen("rev_rmnet"))) ||
 		    (!strncmp(de->d_name, "sit",strlen("sit")))
 		    )
                     continue;
@@ -265,14 +268,17 @@ namespace android {
                         continue;
 
                 snprintf(path, SYSFS_PATH_MAX,"%s/%s/ifindex", SYSFS_CLASS_NET, de->d_name);
+
                 if ((ifidx = fopen(path, "r")) != NULL) {
                     memset(idx, 0, MAX_FGETS_LEN + 1);
                     if (fgets(idx,MAX_FGETS_LEN, ifidx) != NULL) {
                         index = strtoimax(idx, NULL, 10);
                     } else {
-                        if (DBG) ALOGD("Can not read %s", path);
+                        if (DBG) ALOGD("Can not read %s(%d)", path, errno);
+                        fclose(ifidx);
                         continue;
                     }
+                    fclose(ifidx);
                 } else {
                     if (DBG) ALOGD("Can not open %s for read", path);
                     continue;
@@ -288,7 +294,7 @@ namespace android {
                 intfinfo->i = index;
                 if (DBG) ALOGD("interface %s:%d found", intfinfo->name, intfinfo->i);
                 add_int_to_list(intfinfo);
-            }
+            }/* while */
             closedir(netdir);
         }
         ret = 0;
@@ -304,9 +310,14 @@ namespace android {
     static jint android_net_ethernet_initEthernetNative(JNIEnv *env,
                                                         jobject clazz)
     {
+        /* to prevent double opening */
+        if (nl_socket_msg > 0)
+           return 0;
+
         int ret = -1;
 
 	if (DBG) ALOGD("==>%s",__FUNCTION__);
+
         memset(&addr_msg, 0, sizeof(sockaddr_nl));
         addr_msg.nl_family = AF_NETLINK;
         memset(&addr_poll, 0, sizeof(sockaddr_nl));
@@ -334,11 +345,9 @@ namespace android {
             goto error;
         }
 
-        errno = 0;
         if (bind(nl_socket_poll, (struct sockaddr *)(&addr_poll),
                 sizeof(struct sockaddr_nl))) {
             if (DBG) ALOGD("Can not bind to netlink poll socket,%s", strerror(errno));
-
             goto error;
         }
 
@@ -355,6 +364,10 @@ namespace android {
             close(nl_socket_msg);
         if (nl_socket_poll > 0)
             close(nl_socket_poll);
+
+        nl_socket_msg  = NL_SOCK_INV;
+        nl_socket_poll = NL_SOCK_INV;
+
         return ret;
     }
 
