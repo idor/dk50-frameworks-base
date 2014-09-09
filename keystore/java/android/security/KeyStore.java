@@ -65,6 +65,14 @@ public class KeyStore {
     public static KeyStore getInstance() {
         IKeystoreService keystore = IKeystoreService.Stub.asInterface(ServiceManager
                 .getService("android.security.keystore"));
+
+	if (keystore == null) {
+		Log.e(TAG, "Keystore service not initialized");
+	}
+	
+	/* If keystore is null we could return null here, but Many codes use 
+	   KeyStore instance asserting it is not null and causing exception. 
+           So return not null */
         return new KeyStore(keystore);
     }
 
@@ -82,6 +90,11 @@ public class KeyStore {
 
     public State state() {
         final int ret;
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return State.UNINITIALIZED;
+	}
+
         try {
             ret = mBinder.test();
         } catch (RemoteException e) {
@@ -102,6 +115,11 @@ public class KeyStore {
     }
 
     public byte[] get(String key) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return null;
+	}
+
         try {
             return mBinder.get(key);
         } catch (RemoteException e) {
@@ -111,6 +129,11 @@ public class KeyStore {
     }
 
     public boolean put(String key, byte[] value, int uid, int flags) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.insert(key, value, uid, flags) == NO_ERROR;
         } catch (RemoteException e) {
@@ -120,6 +143,11 @@ public class KeyStore {
     }
 
     public boolean delete(String key, int uid) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.del(key, uid) == NO_ERROR;
         } catch (RemoteException e) {
@@ -133,6 +161,11 @@ public class KeyStore {
     }
 
     public boolean contains(String key, int uid) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.exist(key, uid) == NO_ERROR;
         } catch (RemoteException e) {
@@ -146,6 +179,11 @@ public class KeyStore {
     }
 
     public String[] saw(String prefix, int uid) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return null;
+	}
+
         try {
             return mBinder.saw(prefix, uid);
         } catch (RemoteException e) {
@@ -159,6 +197,11 @@ public class KeyStore {
     }
 
     public boolean reset() {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.reset() == NO_ERROR;
         } catch (RemoteException e) {
@@ -168,6 +211,11 @@ public class KeyStore {
     }
 
     public boolean password(String password) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.password(password) == NO_ERROR;
         } catch (RemoteException e) {
@@ -177,6 +225,11 @@ public class KeyStore {
     }
 
     public boolean lock() {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.lock() == NO_ERROR;
         } catch (RemoteException e) {
@@ -186,6 +239,11 @@ public class KeyStore {
     }
 
     public boolean unlock(String password) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             mError = mBinder.unlock(password);
             return mError == NO_ERROR;
@@ -196,6 +254,11 @@ public class KeyStore {
     }
 
     public boolean isEmpty() {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.zero() == KEY_NOT_FOUND;
         } catch (RemoteException e) {
@@ -206,6 +269,11 @@ public class KeyStore {
 
     public boolean generate(String key, int uid, int keyType, int keySize, int flags,
             byte[][] args) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.generate(key, uid, keyType, keySize, flags, args) == NO_ERROR;
         } catch (RemoteException e) {
@@ -215,6 +283,11 @@ public class KeyStore {
     }
 
     public boolean importKey(String keyName, byte[] key, int uid, int flags) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.import_key(keyName, key, uid, flags) == NO_ERROR;
         } catch (RemoteException e) {
@@ -224,6 +297,11 @@ public class KeyStore {
     }
 
     public byte[] getPubkey(String key) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return null;
+	}
+
         try {
             return mBinder.get_pubkey(key);
         } catch (RemoteException e) {
@@ -233,6 +311,11 @@ public class KeyStore {
     }
 
     public boolean delKey(String key, int uid) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.del_key(key, uid) == NO_ERROR;
         } catch (RemoteException e) {
@@ -246,6 +329,11 @@ public class KeyStore {
     }
 
     public byte[] sign(String key, byte[] data) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return null;
+	}
+
         try {
             return mBinder.sign(key, data);
         } catch (RemoteException e) {
@@ -255,6 +343,11 @@ public class KeyStore {
     }
 
     public boolean verify(String key, byte[] data, byte[] signature) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.verify(key, data, signature) == NO_ERROR;
         } catch (RemoteException e) {
@@ -264,6 +357,11 @@ public class KeyStore {
     }
 
     public boolean grant(String key, int uid) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.grant(key, uid) == NO_ERROR;
         } catch (RemoteException e) {
@@ -273,6 +371,11 @@ public class KeyStore {
     }
 
     public boolean ungrant(String key, int uid) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.ungrant(key, uid) == NO_ERROR;
         } catch (RemoteException e) {
@@ -286,6 +389,11 @@ public class KeyStore {
      * epoch. Will return -1L if the key could not be found or other error.
      */
     public long getmtime(String key) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return -1L;
+	}
+
         try {
             final long millis = mBinder.getmtime(key);
             if (millis == -1L) {
@@ -300,6 +408,11 @@ public class KeyStore {
     }
 
     public boolean duplicate(String srcKey, int srcUid, String destKey, int destUid) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.duplicate(srcKey, srcUid, destKey, destUid) == NO_ERROR;
         } catch (RemoteException e) {
@@ -314,6 +427,11 @@ public class KeyStore {
     }
 
     public boolean isHardwareBacked(String keyType) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.is_hardware_backed(keyType.toUpperCase(Locale.US)) == NO_ERROR;
         } catch (RemoteException e) {
@@ -323,6 +441,11 @@ public class KeyStore {
     }
 
     public boolean clearUid(int uid) {
+	if (mBinder == null) {
+            Log.d(TAG, "Keystore not initialized");
+            return false;
+	}
+
         try {
             return mBinder.clear_uid(uid) == NO_ERROR;
         } catch (RemoteException e) {
