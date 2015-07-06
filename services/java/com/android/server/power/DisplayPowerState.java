@@ -330,6 +330,7 @@ final class DisplayPowerState {
     private final class PhotonicModulator {
         private static final boolean INITIAL_SCREEN_ON = false; // unknown, assume off
         private static final int INITIAL_BACKLIGHT = -1; // unknown
+        private static final int MAX_BACKLIGHT_STEP = 8;
 
         private final Object mLock = new Object();
 
@@ -381,13 +382,22 @@ final class DisplayPowerState {
                     synchronized (mLock) {
                         on = mPendingOn;
                         onChanged = (on != mActualOn);
-                        backlight = mPendingBacklight;
-                        backlightChanged = (backlight != mActualBacklight);
+                        backlightChanged =
+                            (mPendingBacklight != mActualBacklight);
                         if (!onChanged && !backlightChanged) {
                             mChangeInProgress = false;
                             break;
                         }
                         mActualOn = on;
+                        if(Math.abs(mActualBacklight - mPendingBacklight) >
+                            MAX_BACKLIGHT_STEP) {
+                            backlight = (mActualBacklight > mPendingBacklight) ?
+                                        mActualBacklight - MAX_BACKLIGHT_STEP :
+                                        mActualBacklight + MAX_BACKLIGHT_STEP;
+                        }
+                        else {
+                            backlight = mPendingBacklight;
+                        }
                         mActualBacklight = backlight;
                     }
 
